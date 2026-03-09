@@ -1,0 +1,8 @@
+[user]
+    name = Viterkim
+
+[init]
+    defaultBranch = main
+
+[core]
+    editor = nvim

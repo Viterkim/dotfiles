@@ -2,10 +2,13 @@
 set -euo pipefail
 
 usage() {
-  echo "usage: copy_git_diff_clipboard.sh -a | -s | -u" >&2
-  echo "  -a  all changes (as if: git add -A; then diff vs HEAD / empty tree)" >&2
-  echo "  -s  staged changes" >&2
-  echo "  -u  unstaged changes" >&2
+  echo "usage: copy_git_diff_clipboard.sh -a | -s | -u | -c <commit> | -b <branch> | -m" >&2
+  echo "  -a            all changes (as if: git add -A; then diff vs HEAD / empty tree)" >&2
+  echo "  -s            staged changes" >&2
+  echo "  -u            unstaged changes" >&2
+  echo "  -c <commit>   changes in a specific commit" >&2
+  echo "  -b <branch>   diff against a specific branch" >&2
+  echo "  -m            diff against main or master" >&2
   exit 1
 }
 
@@ -15,16 +18,19 @@ if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
 fi
 
 MODE=""
-while getopts "asu" opt; do
+TARGET=""
+while getopts "asuc:b:m" opt; do
   case "$opt" in
     a) MODE="all" ;;
     s) MODE="staged" ;;
     u) MODE="unstaged" ;;
+    c) MODE="commit"; TARGET="$OPTARG" ;;
+    b) MODE="branch"; TARGET="$OPTARG" ;;
+    m) MODE="main_auto" ;;
     *) usage ;;
   esac
 done
 
-# Require exactly one flag, and no extra args
 shift $((OPTIND - 1))
 if [ -z "${MODE}" ] || [ "${#}" -ne 0 ]; then
   usage
@@ -47,42 +53,51 @@ case "$MODE" in
     LABEL="staged changes"
     ;;
 
+  commit)
+    CONTENT="$(git show --no-color "$TARGET")"
+    LABEL="commit $TARGET"
+    ;;
+
+  branch)
+    CONTENT="$(git diff --no-color "$TARGET")"
+    LABEL="diff against $TARGET"
+    ;;
+
+  main_auto)
+    # Check if 'main' exists, otherwise fallback to 'master'
+    if git rev-parse --verify main >/dev/null 2>&1; then
+      MAIN_BRANCH="main"
+    else
+      MAIN_BRANCH="master"
+    fi
+    CONTENT="$(git diff --no-color "$MAIN_BRANCH")"
+    LABEL="diff against $MAIN_BRANCH"
+    ;;
+
   all)
     LABEL="all changes"
-
     TMP_INDEX="$(mktemp)"
     RESTORE_INDEX="0"
 
     cleanup() {
-      # Restore original index state
       if [ "$RESTORE_INDEX" = "1" ]; then
         if [ -f "$TMP_INDEX" ]; then
-          # Original index existed
           cp -f "$TMP_INDEX" "$INDEX_PATH" 2>/dev/null || true
         else
-          # Original index did not exist
           rm -f "$INDEX_PATH" 2>/dev/null || true
         fi
       fi
+      rm -f "$TMP_INDEX"
     }
     trap cleanup EXIT INT TERM
 
-    # Snapshot whether index existed, and if so save it
     if [ -f "$INDEX_PATH" ]; then
       cp -f "$INDEX_PATH" "$TMP_INDEX"
-    else
-      # mark "no original index" by removing temp file
-      rm -f "$TMP_INDEX"
-      : >"$TMP_INDEX" # create empty marker then delete? nah, we just test -f later; so keep it deleted
-      rm -f "$TMP_INDEX"
     fi
 
     RESTORE_INDEX="1"
-
-    # Stage everything (creates index if missing)
     git add -A >/dev/null 2>&1
 
-    # Diff the index vs base (HEAD if exists, else empty tree)
     if git rev-parse --verify HEAD >/dev/null 2>&1; then
       CONTENT="$(git diff --no-color --cached HEAD)"
     else
@@ -90,7 +105,6 @@ case "$MODE" in
       CONTENT="$(git diff --no-color --cached "$EMPTY_TREE")"
     fi
 
-    # Explicit restore now (trap still covers crashes)
     cleanup
     RESTORE_INDEX="0"
     trap - EXIT INT TERM

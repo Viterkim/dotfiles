@@ -46,7 +46,7 @@ config.keys = {
 
 	-- Tab Renaming
 	{
-		key = "x",
+		key = "l",
 		mods = "ALT",
 		action = wezterm.action.PromptInputLine({
 			description = "Rename Tab",

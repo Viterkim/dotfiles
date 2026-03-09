@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+set -euo pipefail
+
 configs=("root" "home")
 
 for c in "${configs[@]}"; do

@@ -1,10 +1,159 @@
 #!/usr/bin/env bash
-set -eu
+set -euo pipefail
 
 RECURSIVE=0
 
+IGNORE_NAMES=(
+  # vcs
+  ".git"
+  ".gitignore"
+  ".gitmodules"
+  ".gitattributes"
+  ".github"
+  ".gitlab"
+
+  # dependency
+  "node_modules"
+  "vendor"
+  ".pnpm-store"
+  ".yarn"
+  ".npm"
+
+  # build
+  "target"
+  "dist"
+  "build"
+  "out"
+  "release"
+  "debug"
+  ".output"
+  "*.map"
+
+  # frameworks
+  ".next"
+  ".nuxt"
+  ".svelte-kit"
+  ".angular"
+  ".expo"
+
+  # deploy
+  ".vercel"
+  ".netlify"
+
+  # cache
+  ".cache"
+  ".turbo"
+  ".parcel-cache"
+  ".vite"
+  ".eslintcache"
+
+  # python
+  "__pycache__"
+  ".pytest_cache"
+  ".mypy_cache"
+  ".ruff_cache"
+
+  # rust
+  ".cargo"
+
+  # java
+  ".gradle"
+
+  # env
+  ".env"
+  ".env.local"
+  ".direnv"
+
+  # editors
+  ".idea"
+  ".vscode"
+
+  # temp
+  "tmp"
+  "temp"
+  "temp-out"
+
+  # testing
+  "mock_fs"
+  "mock-fs"
+  "coverage"
+  ".nyc_output"
+  ".coverage"
+
+  # python env
+  ".venv"
+  "venv"
+
+  # infra
+  ".terraform"
+
+  # locks
+  "*.lock"
+  "*lock.json"
+  "*lock.yaml"
+
+  # binaries
+  "*.hex"
+  "*.bin"
+  "*.wasm"
+  "*.exe"
+  "*.dll"
+  "*.so"
+  "*.dylib"
+
+  # minified
+  "*.min.js"
+  "*.min.css"
+
+  # media
+  "*.png"
+  "*.jpg"
+  "*.jpeg"
+  "*.gif"
+  "*.webp"
+  "*.svg"
+  "*.mp4"
+  "*.mov"
+  "*.webm"
+
+  # misc
+  ".DS_Store"
+)
+
+usage() {
+  echo "usage: copy-files-clipboard.sh [-r] <directory>" >&2
+  exit 1
+}
+
+build_find_cmd() {
+  local dir="$1"
+  local -a cmd=()
+
+  cmd+=(find "$dir")
+
+  if [ "$RECURSIVE" -ne 1 ]; then
+    cmd+=(-maxdepth 1)
+  fi
+
+  cmd+=("(")
+
+  local first=1
+  local pattern
+  for pattern in "${IGNORE_NAMES[@]}"; do
+    if [ "$first" -eq 0 ]; then
+      cmd+=(-o)
+    fi
+    cmd+=(-name "$pattern")
+    first=0
+  done
+
+  cmd+=(")" -prune -o -type f -print0)
+
+  printf '%s\0' "${cmd[@]}"
+}
+
 # Parse flags
-while [ "${1:-}" ]; do
+while [ "${1:-}" != "" ]; do
   case "$1" in
     -r)
       RECURSIVE=1
@@ -12,7 +161,7 @@ while [ "${1:-}" ]; do
       ;;
     -*)
       echo "unknown flag: $1" >&2
-      exit 1
+      usage
       ;;
     *)
       break
@@ -23,8 +172,7 @@ done
 DIR="${1:-}"
 
 if [ -z "$DIR" ] || [ ! -d "$DIR" ]; then
-  echo "usage: copy-files-clipboard.sh [-r] <directory>" >&2
-  exit 1
+  usage
 fi
 
 FILE_COUNT=0
@@ -32,13 +180,13 @@ TOTAL_LINES=0
 TOTAL_CHARS=0
 CONTENT=""
 
-if [ "$RECURSIVE" -eq 1 ]; then
-  FILES=$(find "$DIR" -type f | sort)
-else
-  FILES=$(find "$DIR" -maxdepth 1 -type f | sort)
-fi
+# Build find command safely as an array
+mapfile -d '' -t FIND_CMD < <(build_find_cmd "$DIR")
 
-for f in $FILES; do
+# Collect files safely, preserving weird filenames
+mapfile -d '' -t FILES < <("${FIND_CMD[@]}" | sort -z)
+
+for f in "${FILES[@]}"; do
   FILE_COUNT=$((FILE_COUNT + 1))
 
   LINES=$(wc -l < "$f" | tr -d ' ')
@@ -51,8 +199,8 @@ for f in $FILES; do
   echo "  lines: $LINES"
   echo "  chars: $CHARS"
 
-  CONTENT="$CONTENT===== $f =====
-$(cat "$f")
+  CONTENT+="===== $f =====
+$(cat -- "$f")
 
 "
 done
@@ -62,7 +210,6 @@ if [ "$FILE_COUNT" -eq 0 ]; then
   exit 1
 fi
 
-# Clipboard
 if command -v wl-copy >/dev/null 2>&1; then
   printf "%s" "$CONTENT" | wl-copy
   CLIP="wl-copy"
