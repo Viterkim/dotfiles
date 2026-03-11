@@ -3,12 +3,12 @@ set -euo pipefail
 
 usage() {
   echo "usage: copy_git_diff_clipboard.sh -a | -s | -u | -c <commit> | -b <branch> | -m" >&2
-  echo "  -a            all changes (as if: git add -A; then diff vs HEAD / empty tree)" >&2
+  echo "  -a            all changes (tracked + untracked), without touching your real index" >&2
   echo "  -s            staged changes" >&2
   echo "  -u            unstaged changes" >&2
-  echo "  -c <commit>   changes in a specific commit" >&2
-  echo "  -b <branch>   diff against a specific branch" >&2
-  echo "  -m            diff against main or master" >&2
+  echo "  -c <commit>   combined diff from <commit> to HEAD" >&2
+  echo "  -b <branch>   diff from merge-base(<branch>, HEAD) to HEAD" >&2
+  echo "  -m            diff from merge-base(main/master, HEAD) to HEAD" >&2
   exit 1
 }
 
@@ -19,6 +19,7 @@ fi
 
 MODE=""
 TARGET=""
+
 while getopts "asuc:b:m" opt; do
   case "$opt" in
     a) MODE="all" ;;
@@ -36,8 +37,13 @@ if [ -z "${MODE}" ] || [ "${#}" -ne 0 ]; then
   usage
 fi
 
-GIT_DIR="$(git rev-parse --git-dir)"
-INDEX_PATH="${GIT_DIR%/}/index"
+require_commitish() {
+  local rev="$1"
+  if ! git rev-parse --verify "${rev}^{commit}" >/dev/null 2>&1; then
+    echo "Unknown revision: $rev" >&2
+    exit 1
+  fi
+}
 
 CONTENT=""
 LABEL=""
@@ -54,48 +60,42 @@ case "$MODE" in
     ;;
 
   commit)
-    CONTENT="$(git show --no-color "$TARGET")"
-    LABEL="commit $TARGET"
+    require_commitish "$TARGET"
+    CONTENT="$(git diff --no-color "$TARGET..HEAD")"
+    LABEL="diff from $TARGET to HEAD"
     ;;
 
   branch)
-    CONTENT="$(git diff --no-color "$TARGET")"
-    LABEL="diff against $TARGET"
+    require_commitish "$TARGET"
+    CONTENT="$(git diff --no-color "$TARGET...HEAD")"
+    LABEL="diff from merge-base($TARGET, HEAD) to HEAD"
     ;;
 
   main_auto)
-    # Check if 'main' exists, otherwise fallback to 'master'
-    if git rev-parse --verify main >/dev/null 2>&1; then
+    if git rev-parse --verify "main^{commit}" >/dev/null 2>&1; then
       MAIN_BRANCH="main"
-    else
+    elif git rev-parse --verify "master^{commit}" >/dev/null 2>&1; then
       MAIN_BRANCH="master"
+    else
+      echo "Could not find main or master" >&2
+      exit 1
     fi
-    CONTENT="$(git diff --no-color "$MAIN_BRANCH")"
-    LABEL="diff against $MAIN_BRANCH"
+
+    CONTENT="$(git diff --no-color "$MAIN_BRANCH...HEAD")"
+    LABEL="diff from merge-base($MAIN_BRANCH, HEAD) to HEAD"
     ;;
 
   all)
     LABEL="all changes"
-    TMP_INDEX="$(mktemp)"
-    RESTORE_INDEX="0"
 
+    TMP_INDEX="$(mktemp)"
     cleanup() {
-      if [ "$RESTORE_INDEX" = "1" ]; then
-        if [ -f "$TMP_INDEX" ]; then
-          cp -f "$TMP_INDEX" "$INDEX_PATH" 2>/dev/null || true
-        else
-          rm -f "$INDEX_PATH" 2>/dev/null || true
-        fi
-      fi
       rm -f "$TMP_INDEX"
     }
     trap cleanup EXIT INT TERM
 
-    if [ -f "$INDEX_PATH" ]; then
-      cp -f "$INDEX_PATH" "$TMP_INDEX"
-    fi
+    export GIT_INDEX_FILE="$TMP_INDEX"
 
-    RESTORE_INDEX="1"
     git add -A >/dev/null 2>&1
 
     if git rev-parse --verify HEAD >/dev/null 2>&1; then
@@ -105,8 +105,8 @@ case "$MODE" in
       CONTENT="$(git diff --no-color --cached "$EMPTY_TREE")"
     fi
 
+    unset GIT_INDEX_FILE
     cleanup
-    RESTORE_INDEX="0"
     trap - EXIT INT TERM
     ;;
 esac

@@ -118,11 +118,51 @@ IGNORE_NAMES=(
 
   # misc
   ".DS_Store"
+  ".clipboardignore"
+  ".*ignore"
+
+   # ai artifacts
+  "*.gguf"
+  "*.ggml"
+  "*.safetensors"
+  "*.ckpt"
+  "*.pt"
+  "*.pth"
+  "*.onnx"
 )
+
+EXTRA_IGNORE_PATTERNS=()
 
 usage() {
   echo "usage: copy-files-clipboard.sh [-r] <directory>" >&2
   exit 1
+}
+
+trim() {
+  local s="$1"
+  s="${s#"${s%%[![:space:]]*}"}"
+  s="${s%"${s##*[![:space:]]}"}"
+  printf '%s' "$s"
+}
+
+load_ignore_file() {
+  local file="$1"
+  [ -f "$file" ] || return 0
+
+  local line
+  while IFS= read -r line || [ -n "$line" ]; do
+    line="${line%$'\r'}"
+    line="$(trim "$line")"
+
+    # blank
+    [ -z "$line" ] && continue
+
+    # comments
+    [[ "$line" == \#* ]] && continue
+    [[ "$line" == '//'* ]] && continue
+
+    EXTRA_IGNORE_PATTERNS+=("$line")
+  done < "$file"
 }
 
 build_find_cmd() {
@@ -152,6 +192,63 @@ build_find_cmd() {
   printf '%s\0' "${cmd[@]}"
 }
 
+matches_extra_ignore() {
+  local rel="$1"
+  local pat="$2"
+  local base="${rel##*/}"
+
+  # strip leading ./
+  pat="${pat#./}"
+
+  # root-anchored: /foo/bar
+  if [[ "$pat" == /* ]]; then
+    pat="${pat#/}"
+
+    # dir/
+    if [[ "$pat" == */ ]]; then
+      pat="${pat%/}"
+      [[ "$rel" == "$pat"/* || "$rel" == "$pat" ]] && return 0
+      return 1
+    fi
+
+    # exact / glob from root
+    [[ "$rel" == $pat ]] && return 0
+    return 1
+  fi
+
+  # dir/
+  if [[ "$pat" == */ ]]; then
+    pat="${pat%/}"
+    [[ "$rel" == "$pat"/* || "$rel" == */"$pat"/* || "$rel" == "$pat" || "$rel" == */"$pat" ]] && return 0
+    return 1
+  fi
+
+  # path-ish pattern
+  if [[ "$pat" == *"/"* ]]; then
+    [[ "$rel" == $pat || "$rel" == */$pat ]] && return 0
+    return 1
+  fi
+
+  # plain name / glob
+  [[ "$base" == $pat ]] && return 0
+  [[ "$rel" == $pat ]] && return 0
+
+  return 1
+}
+
+should_ignore_file() {
+  local rel="$1"
+
+  local pat
+  for pat in "${EXTRA_IGNORE_PATTERNS[@]}"; do
+    if matches_extra_ignore "$rel" "$pat"; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
 # Parse flags
 while [ "${1:-}" != "" ]; do
   case "$1" in
@@ -175,6 +272,10 @@ if [ -z "$DIR" ] || [ ! -d "$DIR" ]; then
   usage
 fi
 
+# Load rough ignore patterns from files in target dir
+load_ignore_file "$DIR/.gitignore"
+load_ignore_file "$DIR/.clipboardignore"
+
 FILE_COUNT=0
 TOTAL_LINES=0
 TOTAL_CHARS=0
@@ -187,6 +288,13 @@ mapfile -d '' -t FIND_CMD < <(build_find_cmd "$DIR")
 mapfile -d '' -t FILES < <("${FIND_CMD[@]}" | sort -z)
 
 for f in "${FILES[@]}"; do
+  rel="${f#"$DIR"/}"
+  [ "$rel" = "$f" ] && rel="$(basename "$f")"
+
+  if should_ignore_file "$rel"; then
+    continue
+  fi
+
   FILE_COUNT=$((FILE_COUNT + 1))
 
   LINES=$(wc -l < "$f" | tr -d ' ')
