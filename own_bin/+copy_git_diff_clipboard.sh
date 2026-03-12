@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+CLIPCOPY_BIN="$HOME/dotfiles/own_bin_helpers/clipcopy.sh"
+
 usage() {
   echo "usage: copy_git_diff_clipboard.sh -a | -s | -u | -c <commit> | -b <branch> | -m" >&2
   echo "  -a            all changes (tracked + untracked), without touching your real index" >&2
@@ -12,8 +14,27 @@ usage() {
   exit 1
 }
 
+detect_clip_backend() {
+  if [ -n "${SSH_TTY:-}${SSH_CLIENT:-}${SSH_CONNECTION:-}" ]; then
+    printf '%s\n' "osc52"
+  elif command -v wl-copy >/dev/null 2>&1; then
+    printf '%s\n' "wl-copy"
+  elif command -v xclip >/dev/null 2>&1; then
+    printf '%s\n' "xclip"
+  elif command -v pbcopy >/dev/null 2>&1; then
+    printf '%s\n' "pbcopy"
+  else
+    printf '%s\n' "unknown"
+  fi
+}
+
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   echo "Not inside a git repository" >&2
+  exit 1
+fi
+
+if [ ! -x "$CLIPCOPY_BIN" ]; then
+  echo "Clipboard helper not found or not executable: $CLIPCOPY_BIN" >&2
   exit 1
 fi
 
@@ -95,7 +116,6 @@ case "$MODE" in
     trap cleanup EXIT INT TERM
 
     export GIT_INDEX_FILE="$TMP_INDEX"
-
     git add -A >/dev/null 2>&1
 
     if git rev-parse --verify HEAD >/dev/null 2>&1; then
@@ -119,16 +139,8 @@ fi
 TOTAL_LINES=$(printf "%s" "$CONTENT" | wc -l | tr -d ' ')
 TOTAL_CHARS=$(printf "%s" "$CONTENT" | wc -c | tr -d ' ')
 
-if command -v wl-copy >/dev/null 2>&1; then
-  printf "%s" "$CONTENT" | wl-copy
-  CLIP="wl-copy"
-elif command -v xclip >/dev/null 2>&1; then
-  printf "%s" "$CONTENT" | xclip -selection clipboard
-  CLIP="xclip"
-else
-  echo "No clipboard tool found (need wl-copy or xclip)" >&2
-  exit 1
-fi
+printf "%s" "$CONTENT" | "$CLIPCOPY_BIN"
+CLIP="$(detect_clip_backend)"
 
 echo
 echo "Copied $LABEL to clipboard via $CLIP"

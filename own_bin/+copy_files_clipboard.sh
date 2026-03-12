@@ -2,6 +2,8 @@
 set -euo pipefail
 
 RECURSIVE=0
+TARGET="${1:-}"
+CLIPCOPY_BIN="$HOME/dotfiles/own_bin_helpers/clipcopy.sh"
 
 IGNORE_NAMES=(
   # vcs
@@ -121,7 +123,7 @@ IGNORE_NAMES=(
   ".clipboardignore"
   ".*ignore"
 
-   # ai artifacts
+  # ai artifacts
   "*.gguf"
   "*.ggml"
   "*.safetensors"
@@ -134,7 +136,10 @@ IGNORE_NAMES=(
 EXTRA_IGNORE_PATTERNS=()
 
 usage() {
-  echo "usage: copy-files-clipboard.sh [-r] <directory>" >&2
+  echo "usage: copy-files-clipboard.sh [-r] <file-or-directory>" >&2
+  echo "  <file>        copy one file" >&2
+  echo "  <directory>   copy files in directory" >&2
+  echo "  -r            recurse into subdirectories" >&2
   exit 1
 }
 
@@ -154,15 +159,77 @@ load_ignore_file() {
     line="${line%$'\r'}"
     line="$(trim "$line")"
 
-    # blank
     [ -z "$line" ] && continue
-
-    # comments
     [[ "$line" == \#* ]] && continue
     [[ "$line" == '//'* ]] && continue
 
     EXTRA_IGNORE_PATTERNS+=("$line")
   done < "$file"
+}
+
+matches_extra_ignore() {
+  local rel="$1"
+  local pat="$2"
+  local base="${rel##*/}"
+
+  pat="${pat#./}"
+
+  if [[ "$pat" == /* ]]; then
+    pat="${pat#/}"
+
+    if [[ "$pat" == */ ]]; then
+      pat="${pat%/}"
+      [[ "$rel" == "$pat"/* || "$rel" == "$pat" ]] && return 0
+      return 1
+    fi
+
+    [[ "$rel" == $pat ]] && return 0
+    return 1
+  fi
+
+  if [[ "$pat" == */ ]]; then
+    pat="${pat%/}"
+    [[ "$rel" == "$pat"/* || "$rel" == */"$pat"/* || "$rel" == "$pat" || "$rel" == */"$pat" ]] && return 0
+    return 1
+  fi
+
+  if [[ "$pat" == *"/"* ]]; then
+    [[ "$rel" == $pat || "$rel" == */$pat ]] && return 0
+    return 1
+  fi
+
+  [[ "$base" == $pat ]] && return 0
+  [[ "$rel" == $pat ]] && return 0
+
+  return 1
+}
+
+should_ignore_file() {
+  local rel="$1"
+
+  local pat
+  for pat in "${EXTRA_IGNORE_PATTERNS[@]}"; do
+    if matches_extra_ignore "$rel" "$pat"; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+is_ignored_by_name() {
+  local path="$1"
+  local base
+  base="$(basename "$path")"
+
+  local pattern
+  for pattern in "${IGNORE_NAMES[@]}"; do
+    if [[ "$base" == $pattern ]]; then
+      return 0
+    fi
+  done
+
+  return 1
 }
 
 build_find_cmd() {
@@ -192,64 +259,47 @@ build_find_cmd() {
   printf '%s\0' "${cmd[@]}"
 }
 
-matches_extra_ignore() {
-  local rel="$1"
-  local pat="$2"
-  local base="${rel##*/}"
-
-  # strip leading ./
-  pat="${pat#./}"
-
-  # root-anchored: /foo/bar
-  if [[ "$pat" == /* ]]; then
-    pat="${pat#/}"
-
-    # dir/
-    if [[ "$pat" == */ ]]; then
-      pat="${pat%/}"
-      [[ "$rel" == "$pat"/* || "$rel" == "$pat" ]] && return 0
-      return 1
-    fi
-
-    # exact / glob from root
-    [[ "$rel" == $pat ]] && return 0
-    return 1
+detect_clip_backend() {
+  if [ -n "${SSH_TTY:-}${SSH_CLIENT:-}${SSH_CONNECTION:-}" ]; then
+    printf '%s\n' "osc52"
+  elif command -v wl-copy >/dev/null 2>&1; then
+    printf '%s\n' "wl-copy"
+  elif command -v xclip >/dev/null 2>&1; then
+    printf '%s\n' "xclip"
+  elif command -v pbcopy >/dev/null 2>&1; then
+    printf '%s\n' "pbcopy"
+  else
+    printf '%s\n' "unknown"
   fi
-
-  # dir/
-  if [[ "$pat" == */ ]]; then
-    pat="${pat%/}"
-    [[ "$rel" == "$pat"/* || "$rel" == */"$pat"/* || "$rel" == "$pat" || "$rel" == */"$pat" ]] && return 0
-    return 1
-  fi
-
-  # path-ish pattern
-  if [[ "$pat" == *"/"* ]]; then
-    [[ "$rel" == $pat || "$rel" == */$pat ]] && return 0
-    return 1
-  fi
-
-  # plain name / glob
-  [[ "$base" == $pat ]] && return 0
-  [[ "$rel" == $pat ]] && return 0
-
-  return 1
 }
 
-should_ignore_file() {
-  local rel="$1"
+add_file_to_content() {
+  local f="$1"
+  local rel="$2"
 
-  local pat
-  for pat in "${EXTRA_IGNORE_PATTERNS[@]}"; do
-    if matches_extra_ignore "$rel" "$pat"; then
-      return 0
-    fi
-  done
+  if should_ignore_file "$rel"; then
+    return 0
+  fi
 
-  return 1
+  FILE_COUNT=$((FILE_COUNT + 1))
+
+  local lines chars
+  lines=$(wc -l < "$f" | tr -d ' ')
+  chars=$(wc -c < "$f" | tr -d ' ')
+
+  TOTAL_LINES=$((TOTAL_LINES + lines))
+  TOTAL_CHARS=$((TOTAL_CHARS + chars))
+
+  echo "file: $f"
+  echo "  lines: $lines"
+  echo "  chars: $chars"
+
+  CONTENT+="===== $f =====
+$(cat -- "$f")
+
+"
 }
 
-# Parse flags
 while [ "${1:-}" != "" ]; do
   case "$1" in
     -r)
@@ -266,70 +316,67 @@ while [ "${1:-}" != "" ]; do
   esac
 done
 
-DIR="${1:-}"
+TARGET="${1:-}"
 
-if [ -z "$DIR" ] || [ ! -d "$DIR" ]; then
+if [ -z "$TARGET" ]; then
   usage
 fi
 
-# Load rough ignore patterns from files in target dir
-load_ignore_file "$DIR/.gitignore"
-load_ignore_file "$DIR/.clipboardignore"
+if [ ! -e "$TARGET" ]; then
+  echo "Not found: $TARGET" >&2
+  exit 1
+fi
+
+if [ ! -x "$CLIPCOPY_BIN" ]; then
+  echo "Clipboard helper not found or not executable: $CLIPCOPY_BIN" >&2
+  exit 1
+fi
 
 FILE_COUNT=0
 TOTAL_LINES=0
 TOTAL_CHARS=0
 CONTENT=""
 
-# Build find command safely as an array
-mapfile -d '' -t FIND_CMD < <(build_find_cmd "$DIR")
-
-# Collect files safely, preserving weird filenames
-mapfile -d '' -t FILES < <("${FIND_CMD[@]}" | sort -z)
-
-for f in "${FILES[@]}"; do
-  rel="${f#"$DIR"/}"
-  [ "$rel" = "$f" ] && rel="$(basename "$f")"
-
-  if should_ignore_file "$rel"; then
-    continue
+if [ -f "$TARGET" ]; then
+  if is_ignored_by_name "$TARGET"; then
+    echo "Ignored by built-in ignore rules: $TARGET" >&2
+    exit 1
   fi
 
-  FILE_COUNT=$((FILE_COUNT + 1))
+  parent_dir="$(dirname "$TARGET")"
+  rel_name="$(basename "$TARGET")"
 
-  LINES=$(wc -l < "$f" | tr -d ' ')
-  CHARS=$(wc -c < "$f" | tr -d ' ')
+  load_ignore_file "$parent_dir/.gitignore"
+  load_ignore_file "$parent_dir/.clipboardignore"
 
-  TOTAL_LINES=$((TOTAL_LINES + LINES))
-  TOTAL_CHARS=$((TOTAL_CHARS + CHARS))
+  add_file_to_content "$TARGET" "$rel_name"
 
-  echo "file: $f"
-  echo "  lines: $LINES"
-  echo "  chars: $CHARS"
+elif [ -d "$TARGET" ]; then
+  load_ignore_file "$TARGET/.gitignore"
+  load_ignore_file "$TARGET/.clipboardignore"
 
-  CONTENT+="===== $f =====
-$(cat -- "$f")
+  mapfile -d '' -t FIND_CMD < <(build_find_cmd "$TARGET")
+  mapfile -d '' -t FILES < <("${FIND_CMD[@]}" | sort -z)
 
-"
-done
+  for f in "${FILES[@]}"; do
+    rel="${f#"$TARGET"/}"
+    [ "$rel" = "$f" ] && rel="$(basename "$f")"
+    add_file_to_content "$f" "$rel"
+  done
+else
+  echo "Not a regular file or directory: $TARGET" >&2
+  exit 1
+fi
 
 if [ "$FILE_COUNT" -eq 0 ]; then
-  echo "No files found in $DIR" >&2
+  echo "No files found in $TARGET" >&2
   exit 1
 fi
 
-if command -v wl-copy >/dev/null 2>&1; then
-  printf "%s" "$CONTENT" | wl-copy
-  CLIP="wl-copy"
-elif command -v xclip >/dev/null 2>&1; then
-  printf "%s" "$CONTENT" | xclip -selection clipboard
-  CLIP="xclip"
-else
-  echo "No clipboard tool found (need wl-copy or xclip)" >&2
-  exit 1
-fi
+printf "%s" "$CONTENT" | "$CLIPCOPY_BIN"
+CLIP="$(detect_clip_backend)"
 
 echo
-echo "Copied $FILE_COUNT files to clipboard via $CLIP"
+echo "Copied $FILE_COUNT file(s) to clipboard via $CLIP"
 echo "Total lines: $TOTAL_LINES"
 echo "Total chars: $TOTAL_CHARS"
