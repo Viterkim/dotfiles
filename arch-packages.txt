@@ -56,3 +56,4 @@ xclip
 zip
 starship
 gnome-randr-rust
+lazydocker-bin

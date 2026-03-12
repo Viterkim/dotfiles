@@ -16,6 +16,7 @@ git clone git@github.com:Viterkim/dotfiles.git ~/dotfiles
 
 ## Linked (install/auto-install.sh)
 - .config/fish/config.fish
+- .config/starship.toml
 - .config/paru/paru.conf
 - .wezterm.lua
 
