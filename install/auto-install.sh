@@ -12,4 +12,6 @@ ln -sf "$DOTFILES/.config/starship.toml" "$HOME/.config/starship.toml"
 ln -sf "$DOTFILES/.wezterm.lua" "$HOME/.wezterm.lua"
 ln -sf "$DOTFILES/.config/paru/paru.conf" "$HOME/.config/paru/paru.conf"
 
+sudo usermod -aG docker $USER
+
 "$DOTFILES/install/manual-install.sh"
