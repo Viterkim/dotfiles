@@ -9,8 +9,6 @@ alias nano="nvim"
 alias vi="nvim"
 alias vim="nvim"
 alias snvim="sudo -E nvim"
-alias docker="sudo docker"
-alias lazydocker="sudo lazydocker"
 
 set -gx EDITOR "nvim"
 set -gx XDG_STATE_HOME "$HOME/.xdg"

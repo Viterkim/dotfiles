@@ -16,7 +16,7 @@ echo "cp -f \"$DOTFILES/.gitconfig\" \"$HOME/.gitconfig\""
 echo "git config --global user.email \"REPLACE@ME.COM\""
 echo
 echo "change lid suspend logic (copy into '/etc/systemd/logind.conf')"
-echo "cat \"$DOTFILES/etc/systemd/logind.conf\""
+echo "cat \"$DOTFILES/fake_rootfs/etc/systemd/logind.conf\""
 echo
 echo "checkout ./fake_rootfs for manual system/rootfs files"
 echo
