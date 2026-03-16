@@ -259,20 +259,6 @@ build_find_cmd() {
   printf '%s\0' "${cmd[@]}"
 }
 
-detect_clip_backend() {
-  if [ -n "${SSH_TTY:-}${SSH_CLIENT:-}${SSH_CONNECTION:-}" ]; then
-    printf '%s\n' "osc52"
-  elif command -v wl-copy >/dev/null 2>&1; then
-    printf '%s\n' "wl-copy"
-  elif command -v xclip >/dev/null 2>&1; then
-    printf '%s\n' "xclip"
-  elif command -v pbcopy >/dev/null 2>&1; then
-    printf '%s\n' "pbcopy"
-  else
-    printf '%s\n' "unknown"
-  fi
-}
-
 add_file_to_content() {
   local f="$1"
   local rel="$2"
@@ -373,8 +359,8 @@ if [ "$FILE_COUNT" -eq 0 ]; then
   exit 1
 fi
 
+CLIP="$("$CLIPCOPY_BIN" --backend)"
 printf "%s" "$CONTENT" | "$CLIPCOPY_BIN"
-CLIP="$(detect_clip_backend)"
 
 echo
 echo "Copied $FILE_COUNT file(s) to clipboard via $CLIP"

@@ -14,20 +14,6 @@ usage() {
   exit 1
 }
 
-detect_clip_backend() {
-  if [ -n "${SSH_TTY:-}${SSH_CLIENT:-}${SSH_CONNECTION:-}" ]; then
-    printf '%s\n' "osc52"
-  elif command -v wl-copy >/dev/null 2>&1; then
-    printf '%s\n' "wl-copy"
-  elif command -v xclip >/dev/null 2>&1; then
-    printf '%s\n' "xclip"
-  elif command -v pbcopy >/dev/null 2>&1; then
-    printf '%s\n' "pbcopy"
-  else
-    printf '%s\n' "unknown"
-  fi
-}
-
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   echo "Not inside a git repository" >&2
   exit 1
@@ -139,8 +125,8 @@ fi
 TOTAL_LINES=$(printf "%s" "$CONTENT" | wc -l | tr -d ' ')
 TOTAL_CHARS=$(printf "%s" "$CONTENT" | wc -c | tr -d ' ')
 
+CLIP="$("$CLIPCOPY_BIN" --backend)"
 printf "%s" "$CONTENT" | "$CLIPCOPY_BIN"
-CLIP="$(detect_clip_backend)"
 
 echo
 echo "Copied $LABEL to clipboard via $CLIP"
