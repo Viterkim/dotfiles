@@ -43,9 +43,25 @@ require_cmd() {
 
 cmd_set_mode() {
   local mode="$1"
+  local before
+  local after
+
   require_cmd
+  before="$(powerprofilesctl get)"
+
+  echo "Was: $before"
+  echo
+
+  if [ "$before" = "$mode" ]; then
+    echo "Setting to: $mode (again)"
+  else
+    echo "Setting to: $mode"
+  fi
+
   powerprofilesctl set "$mode"
-  powerprofilesctl get
+  after="$(powerprofilesctl get)"
+  echo
+  echo "Now: $after"
 }
 
 cmd_current() {

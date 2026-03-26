@@ -4,6 +4,8 @@ local config = wezterm.config_builder()
 config.window_close_confirmation = "NeverPrompt"
 config.window_decorations = "RESIZE"
 
+config.canonicalize_pasted_newlines = "LineFeed"
+
 config.initial_cols = 300
 config.initial_rows = 100
 

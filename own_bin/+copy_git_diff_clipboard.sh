@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-CLIPCOPY_BIN="$HOME/dotfiles/own_bin_helpers/clipcopy.sh"
+CLIPCOPY_BIN="$HOME/dotfiles/own_bin/+clipcopy.sh"
 
 usage() {
   echo "usage: copy_git_diff_clipboard.sh -a | -s | -u | -c <commit> | -b <branch> | -m" >&2

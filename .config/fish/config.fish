@@ -23,6 +23,7 @@ end
 fish_add_path $HOME/dotfiles/own_bin
 fish_add_path $HOME/own_bin_cc
 fish_add_path $HOME/.cargo/bin
+fish_add_path ~/.local/bin
 
 # Ranger fix
 function ranger --wraps ranger --description 'Run ranger and cd on exit'

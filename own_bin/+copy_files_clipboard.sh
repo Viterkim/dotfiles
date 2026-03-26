@@ -3,7 +3,7 @@ set -euo pipefail
 
 RECURSIVE=0
 TARGET="${1:-}"
-CLIPCOPY_BIN="$HOME/dotfiles/own_bin_helpers/clipcopy.sh"
+CLIPCOPY_BIN="$HOME/dotfiles/own_bin/+clipcopy.sh"
 
 IGNORE_NAMES=(
   # vcs
