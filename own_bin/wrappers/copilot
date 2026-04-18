@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+real_copilot=/usr/bin/copilot
+
+if [ ! -x "$real_copilot" ]; then
+  echo "copilot binary not found at $real_copilot" >&2
+  exit 1
+fi
+
+exec "$real_copilot" --mode=autopilot --allow-all --no-ask-user "$@"

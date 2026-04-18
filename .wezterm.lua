@@ -1,5 +1,6 @@
 local wezterm = require("wezterm")
 local config = wezterm.config_builder()
+local act = wezterm.action
 
 config.window_close_confirmation = "NeverPrompt"
 config.window_decorations = "RESIZE"
@@ -16,11 +17,37 @@ config.font = wezterm.font("CaskaydiaCove NF")
 config.show_new_tab_button_in_tab_bar = false
 config.hide_tab_bar_if_only_one_tab = true
 
+local function spawn_tab_to_right(window, pane)
+	local tabs = window:mux_window():tabs_with_info()
+	local active_index = 1
+
+	for i, item in ipairs(tabs) do
+		if item.is_active then
+			active_index = i
+			break
+		end
+	end
+
+	local moves_left = #tabs - active_index
+
+	window:perform_action(act.SpawnTab("CurrentPaneDomain"), pane)
+
+	for _ = 1, moves_left do
+		window:perform_action(act.MoveTabRelative(-1), pane)
+	end
+end
+
 config.keys = {
 	-- Tab/Pane Management
 	-- This closes the current pane. If it's the last pane, the tab closes.
 	{ key = "w", mods = "ALT", action = wezterm.action.CloseCurrentPane({ confirm = false }) },
-	{ key = "f", mods = "ALT", action = wezterm.action.SpawnTab("DefaultDomain") },
+	{
+		key = "f",
+		mods = "ALT",
+		action = wezterm.action_callback(function(window, pane)
+			spawn_tab_to_right(window, pane)
+		end),
+	},
 
 	-- Splitting Panes (New sub)
 	{ key = "b", mods = "ALT", action = wezterm.action.SplitVertical({ domain = "CurrentPaneDomain" }) },

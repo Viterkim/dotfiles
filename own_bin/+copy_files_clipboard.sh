@@ -1,27 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-RECURSIVE=0
-TARGET="${1:-}"
-CLIPCOPY_BIN="$HOME/dotfiles/own_bin/+clipcopy.sh"
-
 IGNORE_NAMES=(
-  # vcs
   ".git"
-  ".gitignore"
   ".gitmodules"
   ".gitattributes"
   ".github"
   ".gitlab"
-
-  # dependency
   "node_modules"
   "vendor"
   ".pnpm-store"
   ".yarn"
   ".npm"
-
-  # build
   "target"
   "dist"
   "build"
@@ -30,71 +20,43 @@ IGNORE_NAMES=(
   "debug"
   ".output"
   "*.map"
-
-  # frameworks
   ".next"
   ".nuxt"
   ".svelte-kit"
   ".angular"
   ".expo"
-
-  # deploy
   ".vercel"
   ".netlify"
-
-  # cache
   ".cache"
   ".turbo"
   ".parcel-cache"
   ".vite"
   ".eslintcache"
-
-  # python
   "__pycache__"
   ".pytest_cache"
   ".mypy_cache"
   ".ruff_cache"
-
-  # rust
   ".cargo"
-
-  # java
   ".gradle"
-
-  # env
   ".env"
   ".env.local"
   ".direnv"
-
-  # editors
   ".idea"
   ".vscode"
-
-  # temp
   "tmp"
   "temp"
   "temp-out"
-
-  # testing
   "mock_fs"
   "mock-fs"
   "coverage"
   ".nyc_output"
   ".coverage"
-
-  # python env
   ".venv"
   "venv"
-
-  # infra
   ".terraform"
-
-  # locks
   "*.lock"
   "*lock.json"
   "*lock.yaml"
-
-  # binaries
   "*.hex"
   "*.bin"
   "*.wasm"
@@ -102,12 +64,8 @@ IGNORE_NAMES=(
   "*.dll"
   "*.so"
   "*.dylib"
-
-  # minified
   "*.min.js"
   "*.min.css"
-
-  # media
   "*.png"
   "*.jpg"
   "*.jpeg"
@@ -117,13 +75,6 @@ IGNORE_NAMES=(
   "*.mp4"
   "*.mov"
   "*.webm"
-
-  # misc
-  ".DS_Store"
-  ".clipboardignore"
-  ".*ignore"
-
-  # ai artifacts
   "*.gguf"
   "*.ggml"
   "*.safetensors"
@@ -131,160 +82,85 @@ IGNORE_NAMES=(
   "*.pt"
   "*.pth"
   "*.onnx"
+  ".vibe-state"
 )
 
-EXTRA_IGNORE_PATTERNS=()
-
 usage() {
-  echo "usage: copy-files-clipboard.sh [-r] <file-or-directory>" >&2
+  echo "usage: +copy_files_clipboard.sh [-r] <file-or-directory>" >&2
   echo "  <file>        copy one file" >&2
   echo "  <directory>   copy files in directory" >&2
   echo "  -r            recurse into subdirectories" >&2
   exit 1
 }
 
-trim() {
-  local s="$1"
-  s="${s#"${s%%[![:space:]]*}"}"
-  s="${s%"${s##*[![:space:]]}"}"
-  printf '%s' "$s"
-}
-
-load_ignore_file() {
-  local file="$1"
-  [ -f "$file" ] || return 0
-
-  local line
-  while IFS= read -r line || [ -n "$line" ]; do
-    line="${line%$'\r'}"
-    line="$(trim "$line")"
-
-    [ -z "$line" ] && continue
-    [[ "$line" == \#* ]] && continue
-    [[ "$line" == '//'* ]] && continue
-
-    EXTRA_IGNORE_PATTERNS+=("$line")
-  done < "$file"
-}
-
-matches_extra_ignore() {
+normalize_rel() {
   local rel="$1"
-  local pat="$2"
-  local base="${rel##*/}"
-
-  pat="${pat#./}"
-
-  if [[ "$pat" == /* ]]; then
-    pat="${pat#/}"
-
-    if [[ "$pat" == */ ]]; then
-      pat="${pat%/}"
-      [[ "$rel" == "$pat"/* || "$rel" == "$pat" ]] && return 0
-      return 1
-    fi
-
-    [[ "$rel" == $pat ]] && return 0
-    return 1
-  fi
-
-  if [[ "$pat" == */ ]]; then
-    pat="${pat%/}"
-    [[ "$rel" == "$pat"/* || "$rel" == */"$pat"/* || "$rel" == "$pat" || "$rel" == */"$pat" ]] && return 0
-    return 1
-  fi
-
-  if [[ "$pat" == *"/"* ]]; then
-    [[ "$rel" == $pat || "$rel" == */$pat ]] && return 0
-    return 1
-  fi
-
-  [[ "$base" == $pat ]] && return 0
-  [[ "$rel" == $pat ]] && return 0
-
-  return 1
+  rel="${rel#./}"
+  printf '%s' "$rel"
 }
 
-should_ignore_file() {
+print_summary_line() {
   local rel="$1"
-
-  local pat
-  for pat in "${EXTRA_IGNORE_PATTERNS[@]}"; do
-    if matches_extra_ignore "$rel" "$pat"; then
-      return 0
-    fi
-  done
-
-  return 1
-}
-
-is_ignored_by_name() {
-  local path="$1"
-  local base
-  base="$(basename "$path")"
-
-  local pattern
-  for pattern in "${IGNORE_NAMES[@]}"; do
-    if [[ "$base" == $pattern ]]; then
-      return 0
-    fi
-  done
-
-  return 1
-}
-
-build_find_cmd() {
-  local dir="$1"
-  local -a cmd=()
-
-  cmd+=(find "$dir")
-
-  if [ "$RECURSIVE" -ne 1 ]; then
-    cmd+=(-maxdepth 1)
-  fi
-
-  cmd+=("(")
-
-  local first=1
-  local pattern
-  for pattern in "${IGNORE_NAMES[@]}"; do
-    if [ "$first" -eq 0 ]; then
-      cmd+=(-o)
-    fi
-    cmd+=(-name "$pattern")
-    first=0
-  done
-
-  cmd+=(")" -prune -o -type f -print0)
-
-  printf '%s\0' "${cmd[@]}"
+  local lines="$2"
+  local chars="$3"
+  printf '%7s lines  %8s chars  %s\n' "$lines" "$chars" "$rel" >> "$SUMMARYFILE"
 }
 
 add_file_to_content() {
-  local f="$1"
+  local abs="$1"
   local rel="$2"
-
-  if should_ignore_file "$rel"; then
-    return 0
-  fi
 
   FILE_COUNT=$((FILE_COUNT + 1))
 
   local lines chars
-  lines=$(wc -l < "$f" | tr -d ' ')
-  chars=$(wc -c < "$f" | tr -d ' ')
+  lines=$(wc -l < "$abs" | tr -d ' ')
+  chars=$(wc -c < "$abs" | tr -d ' ')
 
   TOTAL_LINES=$((TOTAL_LINES + lines))
   TOTAL_CHARS=$((TOTAL_CHARS + chars))
 
-  echo "file: $f"
-  echo "  lines: $lines"
-  echo "  chars: $chars"
+  print_summary_line "$rel" "$lines" "$chars"
 
-  CONTENT+="===== $f =====
-$(cat -- "$f")
-
-"
+  {
+    echo "file: $rel"
+    echo "  lines: $lines"
+    echo "  chars: $chars"
+    echo "---"
+    cat -- "$abs"
+    echo
+    echo "---"
+  } >> "$TMPFILE"
 }
+
+build_builtin_ignore_file() {
+  : > "$BUILTIN_IGNORE_FILE"
+  local pattern
+  for pattern in "${IGNORE_NAMES[@]}"; do
+    printf '%s\n' "$pattern" >> "$BUILTIN_IGNORE_FILE"
+  done
+}
+
+build_rg_args() {
+  RG_ARGS=(
+    --files
+    --hidden
+    --no-ignore
+    --no-require-git
+    --null
+    --color=never
+    --ignore-file "$BUILTIN_IGNORE_FILE"
+  )
+
+  if [ -n "${1:-}" ] && [ -f "$1/.clipboardignore" ]; then
+    RG_ARGS+=(--ignore-file "$1/.clipboardignore")
+  fi
+
+  if [ "$RECURSIVE" -ne 1 ]; then
+    RG_ARGS+=(--max-depth 1)
+  fi
+}
+
+RECURSIVE=0
 
 while [ "${1:-}" != "" ]; do
   case "$1" in
@@ -303,52 +179,66 @@ while [ "${1:-}" != "" ]; do
 done
 
 TARGET="${1:-}"
+[ -n "$TARGET" ] || usage
 
-if [ -z "$TARGET" ]; then
-  usage
-fi
+CLIPCOPY_BIN="$HOME/dotfiles/own_bin/+clipcopy.sh"
+[ -f "$CLIPCOPY_BIN" ] || { echo "Clipboard helper not found: $CLIPCOPY_BIN" >&2; exit 1; }
+[ -x "$CLIPCOPY_BIN" ] || { echo "Clipboard helper not executable: $CLIPCOPY_BIN" >&2; exit 1; }
 
-if [ ! -e "$TARGET" ]; then
-  echo "Not found: $TARGET" >&2
-  exit 1
-fi
-
-if [ ! -x "$CLIPCOPY_BIN" ]; then
-  echo "Clipboard helper not found or not executable: $CLIPCOPY_BIN" >&2
-  exit 1
-fi
+command -v rg >/dev/null 2>&1 || { echo "rg is required" >&2; exit 1; }
+command -v sort >/dev/null 2>&1 || { echo "sort is required" >&2; exit 1; }
 
 FILE_COUNT=0
 TOTAL_LINES=0
 TOTAL_CHARS=0
-CONTENT=""
+
+TMPFILE="$(mktemp)"
+SUMMARYFILE="$(mktemp)"
+BUILTIN_IGNORE_FILE="$(mktemp)"
+trap 'rm -f "$TMPFILE" "$SUMMARYFILE" "$BUILTIN_IGNORE_FILE"' EXIT INT TERM
+
+build_builtin_ignore_file
 
 if [ -f "$TARGET" ]; then
-  if is_ignored_by_name "$TARGET"; then
-    echo "Ignored by built-in ignore rules: $TARGET" >&2
+  TARGET_ABS="$(realpath "$TARGET")"
+  TARGET_DIR="$(dirname "$TARGET_ABS")"
+  TARGET_BASE="$(basename "$TARGET_ABS")"
+
+  build_rg_args "$TARGET_DIR"
+
+  included=0
+  while IFS= read -r -d '' rel; do
+    rel="$(normalize_rel "$rel")"
+    if [ "$rel" = "$TARGET_BASE" ]; then
+      included=1
+      break
+    fi
+  done < <(
+    cd "$TARGET_DIR"
+    rg "${RG_ARGS[@]}" . | LC_ALL=C sort -z
+  )
+
+  if [ "$included" -ne 1 ]; then
+    echo "Ignored by built-in rules or .clipboardignore: $TARGET" >&2
     exit 1
   fi
 
-  parent_dir="$(dirname "$TARGET")"
-  rel_name="$(basename "$TARGET")"
-
-  load_ignore_file "$parent_dir/.gitignore"
-  load_ignore_file "$parent_dir/.clipboardignore"
-
-  add_file_to_content "$TARGET" "$rel_name"
+  add_file_to_content "$TARGET_ABS" "$TARGET_BASE"
 
 elif [ -d "$TARGET" ]; then
-  load_ignore_file "$TARGET/.gitignore"
-  load_ignore_file "$TARGET/.clipboardignore"
+  TARGET_ABS="$(realpath "$TARGET")"
 
-  mapfile -d '' -t FIND_CMD < <(build_find_cmd "$TARGET")
-  mapfile -d '' -t FILES < <("${FIND_CMD[@]}" | sort -z)
+  build_rg_args "$TARGET_ABS"
 
-  for f in "${FILES[@]}"; do
-    rel="${f#"$TARGET"/}"
-    [ "$rel" = "$f" ] && rel="$(basename "$f")"
-    add_file_to_content "$f" "$rel"
-  done
+  while IFS= read -r -d '' rel; do
+    rel="$(normalize_rel "$rel")"
+    [ -n "$rel" ] || continue
+    add_file_to_content "$TARGET_ABS/$rel" "$rel"
+  done < <(
+    cd "$TARGET_ABS"
+    rg "${RG_ARGS[@]}" . | LC_ALL=C sort -z
+  )
+
 else
   echo "Not a regular file or directory: $TARGET" >&2
   exit 1
@@ -360,8 +250,11 @@ if [ "$FILE_COUNT" -eq 0 ]; then
 fi
 
 CLIP="$("$CLIPCOPY_BIN" --backend)"
-printf "%s" "$CONTENT" | "$CLIPCOPY_BIN"
+"$CLIPCOPY_BIN" < "$TMPFILE"
 
+echo
+echo "Included files:"
+cat "$SUMMARYFILE"
 echo
 echo "Copied $FILE_COUNT file(s) to clipboard via $CLIP"
 echo "Total lines: $TOTAL_LINES"

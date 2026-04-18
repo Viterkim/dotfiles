@@ -20,8 +20,11 @@ if test -f ~/.config/fish/secrets.fish
 end
 
 # Path
+fish_add_path $HOME/dotfiles/own_bin/wrappers
 fish_add_path $HOME/dotfiles/own_bin
 fish_add_path $HOME/own_bin_cc
+fish_add_path $HOME/own_bin_cc/wrappers
+fish_add_path $HOME/hva/scripts
 fish_add_path $HOME/.cargo/bin
 fish_add_path ~/.local/bin
 
