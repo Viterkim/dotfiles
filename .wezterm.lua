@@ -3,7 +3,6 @@ local config = wezterm.config_builder()
 local act = wezterm.action
 
 config.window_close_confirmation = "NeverPrompt"
-config.window_decorations = "RESIZE"
 
 config.canonicalize_pasted_newlines = "LineFeed"
 
@@ -15,7 +14,7 @@ config.color_scheme = "tokyonight-storm"
 config.font = wezterm.font("CaskaydiaCove NF")
 
 config.show_new_tab_button_in_tab_bar = false
-config.hide_tab_bar_if_only_one_tab = true
+config.hide_tab_bar_if_only_one_tab = false
 
 local function spawn_tab_to_right(window, pane)
 	local tabs = window:mux_window():tabs_with_info()
