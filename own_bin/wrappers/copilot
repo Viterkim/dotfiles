@@ -8,4 +8,5 @@ if [ ! -x "$real_copilot" ]; then
   exit 1
 fi
 
-exec "$real_copilot" --mode=autopilot --allow-all --no-ask-user "$@"
+# exec "$real_copilot" --mode=autopilot --allow-all --no-ask-user "$@"
+exec "$real_copilot" --mode=autopilot --allow-all "$@"

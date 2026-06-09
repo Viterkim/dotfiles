@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+real_agy=/usr/bin/agy
+
+if [ ! -x "$real_agy" ]; then
+  echo "agy binary not found at $real_agy" >&2
+  exit 1
+fi
+
+exec "$real_agy" --dangerously-skip-permissions "$@"

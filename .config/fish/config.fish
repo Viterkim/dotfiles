@@ -8,6 +8,7 @@ alias lg='lazygit'
 alias nano="nvim"
 alias vi="nvim"
 alias vim="nvim"
+alias n='nvim'
 alias snvim="sudo -E nvim"
 
 set -gx EDITOR "nvim"
