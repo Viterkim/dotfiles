@@ -86,10 +86,11 @@ IGNORE_NAMES=(
 )
 
 usage() {
-	echo "usage: +copy_files_clipboard.sh [-r] <file-or-directory>" >&2
+	echo "usage: +copy_files_clipboard.sh [-r] [-g <glob>]... <file-or-directory>" >&2
 	echo "  <file>        copy one file" >&2
 	echo "  <directory>   copy files in directory" >&2
 	echo "  -r            recurse into subdirectories" >&2
+	echo "  -g <glob>     include files matching glob (repeatable)" >&2
 	exit 1
 }
 
@@ -156,14 +157,29 @@ build_rg_args() {
 	if [ "$RECURSIVE" -ne 1 ]; then
 		RG_ARGS+=(--max-depth 1)
 	fi
+
+	local glob
+	for glob in "${GLOB_PATTERNS[@]}"; do
+		RG_ARGS+=(--glob "$glob")
+	done
 }
 
 RECURSIVE=0
+GLOB_PATTERNS=()
 
 while [ "${1:-}" != "" ]; do
 	case "$1" in
 	-r)
 		RECURSIVE=1
+		shift
+		;;
+	-g)
+		shift
+		[ -n "${1:-}" ] || {
+			echo "missing glob after -g" >&2
+			usage
+		}
+		GLOB_PATTERNS+=("$1")
 		shift
 		;;
 	-*)
