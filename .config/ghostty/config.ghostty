@@ -7,6 +7,7 @@ theme = TokyoNight Storm
 font-family = CaskaydiaCove Nerd Font
 font-size = 13
 maximize = true
+mouse-scroll-multiplier = precision:1,discrete:12
 
 # Compact top bar
 gtk-titlebar-style = tabs
@@ -17,7 +18,10 @@ window-new-tab-position = current
 
 # Interaction
 confirm-close-surface = false
+clipboard-paste-protection = false
 selection-clear-on-copy = true
+keybind = alt+ø=reload_config
+keybind = |=text:|
 
 # Tab and pane management
 keybind = alt+w=close_surface
