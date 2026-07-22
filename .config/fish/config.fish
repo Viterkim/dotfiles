@@ -10,6 +10,7 @@ alias vi="nvim"
 alias vim="nvim"
 alias n='nvim'
 alias snvim="sudo -E nvim"
+alias r='y'
 
 set -gx EDITOR "nvim"
 set -gx XDG_STATE_HOME "$HOME/.xdg"
@@ -29,6 +30,18 @@ fish_add_path $HOME/hva/scripts
 fish_add_path $HOME/.cargo/bin
 fish_add_path $HOME/.local/bin
 fish_add_path $HOME/.dotnet/tools
+
+function y --wraps yazi --description 'Run Yazi and cd on exit'
+    set -l tempfile (mktemp -t "yazi-cwd.XXXXXX")
+
+    command yazi $argv --cwd-file $tempfile
+
+    if read -z yazi_dir < $tempfile; and test "$yazi_dir" != "$PWD"; and test -d "$yazi_dir"
+        builtin cd -- "$yazi_dir"
+    end
+
+    command rm -f -- $tempfile
+end
 
 # Ranger fix
 function ranger --wraps ranger --description 'Run ranger and cd on exit'

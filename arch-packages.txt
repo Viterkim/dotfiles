@@ -1,3 +1,4 @@
+7zip
 anki
 base-devel
 bluez
@@ -6,6 +7,10 @@ bottom
 brave-bin
 dbeaver
 docker
+fd
+ffmpeg
+file
+fzf
 fastfetch
 fish
 fnm
@@ -14,10 +19,13 @@ gdm-settings
 git
 go
 google-cloud-cli
+ghostty
 htop
+imagemagick
 inotify-tools
 iw
 iwd
+jq
 keybase-bin
 lazygit
 less
@@ -27,11 +35,14 @@ networkmanager
 networkmanager-openvpn
 nmap
 nordvpn-bin
+nushell
 noto-fonts
 noto-fonts-cjk
 noto-fonts-extra
 obs-studio
+poppler
 ranger
+resvg
 ripgrep
 rustup
 showtime
@@ -53,6 +64,7 @@ wireshark-qt
 wl-clipboard
 wpa_supplicant
 xclip
+yazi
 zip
 starship
 gnome-randr-rust

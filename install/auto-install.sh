@@ -5,10 +5,18 @@ DOTFILES="$HOME/dotfiles"
 
 mkdir -p "$HOME/.config"
 mkdir -p "$HOME/.config/fish"
+mkdir -p "$HOME/.config/ghostty"
+mkdir -p "$HOME/.config/lazygit"
 mkdir -p "$HOME/.config/paru"
+mkdir -p "$HOME/.config/nushell"
+mkdir -p "$HOME/.config/yazi"
 
 ln -sf "$DOTFILES/.config/fish/config.fish" "$HOME/.config/fish/config.fish"
+ln -sf "$DOTFILES/.config/ghostty/config.ghostty" "$HOME/.config/ghostty/config.ghostty"
+ln -sf "$DOTFILES/.config/lazygit/config.yml" "$HOME/.config/lazygit/config.yml"
+ln -sf "$DOTFILES/.config/nushell/config.nu" "$HOME/.config/nushell/config.nu"
 ln -sf "$DOTFILES/.config/starship.toml" "$HOME/.config/starship.toml"
+ln -sf "$DOTFILES/.config/yazi/keymap.toml" "$HOME/.config/yazi/keymap.toml"
 ln -sf "$DOTFILES/.wezterm.lua" "$HOME/.wezterm.lua"
 ln -sf "$DOTFILES/.config/paru/paru.conf" "$HOME/.config/paru/paru.conf"
 
