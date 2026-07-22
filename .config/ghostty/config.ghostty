@@ -1,0 +1,49 @@
+# Shell
+command = /usr/bin/nu
+shell-integration = nushell
+
+# Appearance
+theme = TokyoNight Storm
+font-family = CaskaydiaCove Nerd Font
+font-size = 13
+maximize = true
+
+# Compact top bar
+gtk-titlebar-style = tabs
+gtk-toolbar-style = flat
+gtk-wide-tabs = false
+window-show-tab-bar = always
+window-new-tab-position = current
+
+# Interaction
+confirm-close-surface = false
+selection-clear-on-copy = true
+
+# Tab and pane management
+keybind = alt+w=close_surface
+keybind = alt+f=new_tab
+keybind = alt+b=new_split:down
+keybind = alt+p=new_split:right
+
+keybind = alt+c=goto_split:left
+keybind = alt+d=goto_split:right
+keybind = alt+h=goto_split:up
+keybind = alt+j=goto_split:down
+
+keybind = alt+n=previous_tab
+keybind = alt+e=next_tab
+keybind = alt+i=move_tab:-1
+keybind = alt+o=move_tab:1
+
+keybind = alt+1=goto_tab:1
+keybind = alt+2=goto_tab:2
+keybind = alt+3=goto_tab:3
+keybind = alt+4=goto_tab:4
+keybind = alt+5=goto_tab:5
+keybind = alt+6=goto_tab:6
+
+keybind = alt+l=prompt_tab_title
+
+# Copy selection, otherwise send Ctrl-C to the program.
+keybind = performable:ctrl+c=copy_to_clipboard
+keybind = ctrl+v=paste_from_clipboard

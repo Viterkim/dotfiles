@@ -5,7 +5,7 @@ DOTFILES="$HOME/dotfiles"
 
 echo "manual steps: (remember to run this)"
 echo
-echo "set fish as default shell:"
+echo "fish stays as login shell, ghostty with nushell otherwise:"
 echo "chsh -s /usr/bin/fish"
 echo
 echo "restore gnome settings:"

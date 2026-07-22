@@ -1,0 +1,7 @@
+[mgr]
+prepend_keymap = [
+    { on = "n", run = "arrow prev", desc = "Previous file" },
+    { on = "e", run = "arrow next", desc = "Next file" },
+    { on = "h", run = "leave", desc = "Parent directory" },
+    { on = "i", run = "enter", desc = "Enter directory" },
+]
