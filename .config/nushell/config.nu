@@ -4,6 +4,11 @@ $env.XDG_STATE_HOME = ($env.HOME | path join ".xdg")
 $env.AUTH_WRAPPER_QUIET = "true"
 $env.SHELL = $nu.current-exe
 
+let ssh_auth_sock = ($env.XDG_RUNTIME_DIR | path join "gcr/ssh")
+if ($ssh_auth_sock | path exists) {
+    $env.SSH_AUTH_SOCK = $ssh_auth_sock
+}
+
 $env.config.show_banner = false
 $env.config.buffer_editor = "nvim"
 

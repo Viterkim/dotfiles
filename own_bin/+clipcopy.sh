@@ -38,9 +38,9 @@ copy_osc52() {
 
   if [ -n "${TMUX:-}" ]; then
     # tmux passthrough
-    printf '\033Ptmux;\033\033]52;c;%s\a\033\\' "$b64"
+    printf '\033Ptmux;\033\033]52;c;%s\a\033\\' "$b64" > /dev/tty
   else
-    printf '\033]52;c;%s\a' "$b64"
+    printf '\033]52;c;%s\a' "$b64" > /dev/tty
   fi
 }
 
@@ -60,10 +60,13 @@ copy_stdin() {
       copy_osc52
       ;;
     wl-copy)
-      wl-copy
+      # wl-copy daemonizes to keep serving the Wayland selection. Detach stderr
+      # so it cannot retain a command runner's capture pipe (e.g. lazygit's).
+      wl-copy 2>/dev/null
       ;;
     xclip)
-      xclip -selection clipboard
+      # xclip can also remain alive while it owns the X11 selection.
+      xclip -selection clipboard 2>/dev/null
       ;;
     pbcopy)
       pbcopy
