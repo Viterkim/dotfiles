@@ -12,10 +12,10 @@ git clone git@github.com:Viterkim/dotfiles.git ~/dotfiles
 
 # Breakdown
 
-## Initial Arch System Packages (install/auto-install-packages.sh)
+## Personal Packages (install/auto-install-packages.sh)
 
-- Installs paru
-- Installs packages from arch-packages.txt
+- Installs official repository packages from arch-packages.txt with pacman
+- Optionally installs reviewed AUR packages from aur-packages.txt with paru
 
 ## Linked (install/auto-install.sh)
 

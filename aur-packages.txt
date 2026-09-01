@@ -1,0 +1,9 @@
+brave-origin-bin
+gdm-settings
+github-copilot-cli
+google-cloud-cli
+keybase-bin
+lazydocker-bin
+nordvpn-bin
+slack-desktop
+vscodium-bin
