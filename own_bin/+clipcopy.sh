@@ -18,9 +18,15 @@ is_ssh() {
   [ -n "${SSH_TTY:-}${SSH_CLIENT:-}${SSH_CONNECTION:-}" ]
 }
 
+is_wsl() {
+  [ -n "${WSL_DISTRO_NAME:-}${WSL_INTEROP:-}" ] || [[ "$(uname -r)" == *[Mm]icrosoft* ]]
+}
+
 detect_backend() {
   if is_ssh; then
     printf '%s\n' "osc52"
+  elif is_wsl && command -v clip.exe >/dev/null 2>&1; then
+    printf '%s\n' "clip.exe"
   elif command -v wl-copy >/dev/null 2>&1; then
     printf '%s\n' "wl-copy"
   elif command -v xclip >/dev/null 2>&1; then
@@ -58,6 +64,9 @@ copy_stdin() {
   case "$(detect_backend)" in
     osc52)
       copy_osc52
+      ;;
+    clip.exe)
+      clip.exe
       ;;
     wl-copy)
       # wl-copy daemonizes to keep serving the Wayland selection. Detach stderr

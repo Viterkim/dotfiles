@@ -1,3 +1,7 @@
+gui:
+  # Keep terminal-native text selection working in every terminal/SSH hop.
+  mouseEvents: false
+
 os:
-  openLink: 'xdg-open {{link}}'
+  openLink: '+open-link.sh {{link}}'
   copyToClipboardCmd: 'printf %s {{text}} | +clipcopy.sh'
