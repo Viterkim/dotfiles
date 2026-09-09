@@ -1,4 +1,4 @@
-.config/fish/secrets.fish
+.config/bash/secrets.bash
 .own_bin_cc
 .git-credentials
 AGENTS.md

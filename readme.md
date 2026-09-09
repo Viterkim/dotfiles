@@ -19,10 +19,32 @@ git clone git@github.com:Viterkim/dotfiles.git ~/dotfiles
 
 ## Linked (install/auto-install.sh)
 
-- .config/fish/config.fish
+- .bashrc
+- .bash_profile
+- .config/ghostty/config.ghostty
+- .config/lazygit/config.yml
 - .config/starship.toml
 - .config/paru/paru.conf
 - .wezterm.lua
+- .config/yazi/keymap.toml
+
+## Bash secrets
+
+Shell secrets live outside Git in `~/.config/bash/secrets.bash`. Use Bash export
+syntax and keep the file private:
+
+```bash
+mkdir -p ~/.config/bash
+chmod 700 ~/.config/bash
+$EDITOR ~/.config/bash/secrets.bash
+chmod 600 ~/.config/bash/secrets.bash
+```
+
+Convert old Fish entries such as `set -gx NAME "value"` to:
+
+```bash
+export NAME='value'
+```
 
 ## Manual (install/manual-install.sh)
 
@@ -31,7 +53,11 @@ git clone git@github.com:Viterkim/dotfiles.git ~/dotfiles
 
 ## Added to PATH
 
-- own_bin
+- dotfiles/own_bin/wrappers
+- dotfiles/own_bin
+- own_bin_cc and own_bin_cc/wrappers
+- hva/scripts
+- Cargo, local, and .NET user binaries
 
 ## Nvim Config (Not in this repo)
 

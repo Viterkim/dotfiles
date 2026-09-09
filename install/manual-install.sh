@@ -5,8 +5,8 @@ DOTFILES="$HOME/dotfiles"
 
 echo "manual steps: (remember to run this)"
 echo
-echo "nushell as login shell:"
-echo "chsh -s /usr/bin/nu"
+echo "bash as login shell (takes effect for new login sessions):"
+echo "chsh -s /usr/bin/bash"
 echo
 echo "restore gnome settings:"
 echo "dconf load / < \"$DOTFILES/gnome-settings.dconf\""

@@ -1,6 +1,7 @@
 7zip
 anki
 base-devel
+bash-completion
 bluez-utils
 bottom
 btop
@@ -38,7 +39,6 @@ nmap
 noto-fonts
 noto-fonts-cjk
 noto-fonts-extra
-nushell
 obs-studio
 openai-codex
 poppler
