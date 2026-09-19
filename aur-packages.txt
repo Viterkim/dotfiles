@@ -1,3 +1,4 @@
+antigravity-cli
 brave-origin-bin
 gdm-settings
 github-copilot-cli

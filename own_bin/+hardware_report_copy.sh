@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-CLIPCOPY_BIN="$HOME/dotfiles/own_bin_helpers/clipcopy.sh"
+CLIPCOPY_BIN="$HOME/dotfiles/own_bin/+clipcopy.sh"
 
 json_or_text () { # cmd...
   if outstr="$("$@" 2>/dev/null)"; then

@@ -5,9 +5,6 @@ DOTFILES="$HOME/dotfiles"
 
 echo "manual steps: (remember to run this)"
 echo
-echo "bash as login shell (takes effect for new login sessions):"
-echo "chsh -s /usr/bin/bash"
-echo
 echo "restore gnome settings:"
 echo "dconf load / < \"$DOTFILES/gnome-settings.dconf\""
 echo
@@ -20,5 +17,5 @@ echo "cat \"$DOTFILES/fake_rootfs/etc/systemd/logind.conf\""
 echo
 echo "checkout ./fake_rootfs for manual system/rootfs files"
 echo
-echo "clone nvim repo (https://github.com/Viterkim/astro5):"
-echo "mkdir -p \"$HOME/.config\" && git clone git@github.com:Viterkim/astro5.git \"$HOME/.config/nvim\""
+echo "clone nvim repo (https://github.com/Viterkim/astro6):"
+echo "mkdir -p \"$HOME/.config\" && git clone git@github.com:Viterkim/astro6.git \"$HOME/.config/nvim\""

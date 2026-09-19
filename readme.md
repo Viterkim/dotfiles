@@ -2,7 +2,10 @@
 
 ## Install
 
-- auto-install.sh automatically runs ./manual-install.sh for printed manual instructions
+The package script installs the saved official package list and offers the reviewed
+AUR list. The other one links the configs, makes Bash the login shell, removes
+links left by the old Fish, Nushell and WezTerm setup, then prints the remaining
+manual steps.
 
 ```bash
 git clone git@github.com:Viterkim/dotfiles.git ~/dotfiles
@@ -25,7 +28,6 @@ git clone git@github.com:Viterkim/dotfiles.git ~/dotfiles
 - .config/lazygit/config.yml
 - .config/starship.toml
 - .config/paru/paru.conf
-- .wezterm.lua
 - .config/yazi/keymap.toml
 
 ## Bash secrets
@@ -50,6 +52,8 @@ export NAME='value'
 
 - .gitconfig
 - gnome-settings.dconf
+- fake_rootfs system files
+- Nvim config from [astro6](https://github.com/Viterkim/astro6)
 
 ## Added to PATH
 
