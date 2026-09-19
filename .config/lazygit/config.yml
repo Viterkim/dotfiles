@@ -1,6 +1,7 @@
 gui:
-  # Keep terminal-native text selection working in every terminal/SSH hop.
-  mouseEvents: false
+  # Keep LazyGit clicks and wheel scrolling. Hold Shift while dragging to select
+  # terminal text instead (Windows Terminal/Ghostty, including over SSH).
+  mouseEvents: true
 
 os:
   openLink: '+open-link.sh {{link}}'
