@@ -3,8 +3,8 @@
 ## Install
 
 The package script installs the saved official package list and offers the reviewed
-AUR list. The other one links the configs, makes Bash the login shell, removes
-links left by the old Fish, Nushell and WezTerm setup, then prints the remaining
+AUR list. The other one links the configs, makes Nushell the login shell, removes
+links left by the old Fish, Bash and WezTerm setup, then prints the remaining
 manual steps.
 
 ```bash
@@ -22,30 +22,29 @@ git clone git@github.com:Viterkim/dotfiles.git ~/dotfiles
 
 ## Linked (install/auto-install.sh)
 
-- .bashrc
-- .bash_profile
 - .config/ghostty/config.ghostty
 - .config/lazygit/config.yml
+- .config/nushell/config.nu
 - .config/starship.toml
 - .config/paru/paru.conf
 - .config/yazi/keymap.toml
 
-## Bash secrets
+## Nushell secrets
 
-Shell secrets live outside Git in `~/.config/bash/secrets.bash`. Use Bash export
-syntax and keep the file private:
+Shell secrets live outside Git in `~/.config/nushell/secrets.nu`. Use Nushell
+environment syntax and keep the file private:
 
 ```bash
-mkdir -p ~/.config/bash
-chmod 700 ~/.config/bash
-$EDITOR ~/.config/bash/secrets.bash
-chmod 600 ~/.config/bash/secrets.bash
+mkdir -p ~/.config/nushell
+chmod 700 ~/.config/nushell
+$EDITOR ~/.config/nushell/secrets.nu
+chmod 600 ~/.config/nushell/secrets.nu
 ```
 
-Convert old Fish entries such as `set -gx NAME "value"` to:
+Convert Bash entries such as `export NAME='value'` to:
 
-```bash
-export NAME='value'
+```nu
+$env.NAME = "value"
 ```
 
 ## Manual (install/manual-install.sh)

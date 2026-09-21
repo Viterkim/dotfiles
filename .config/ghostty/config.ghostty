@@ -1,6 +1,6 @@
 # Shell
-command = /usr/bin/bash
-shell-integration = bash
+command = /usr/bin/nu
+shell-integration = nushell
 
 # Appearance
 theme = TokyoNight Storm

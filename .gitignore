@@ -1,4 +1,4 @@
-.config/bash/secrets.bash
+.config/nushell/secrets.nu
 .own_bin_cc
 .git-credentials
 AGENTS.md

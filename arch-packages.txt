@@ -2,7 +2,6 @@
 alsa-utils
 anki
 base-devel
-bash-completion
 bluez-utils
 bolt
 bottom
@@ -49,6 +48,7 @@ nmap
 noto-fonts
 noto-fonts-cjk
 noto-fonts-extra
+nushell
 nvidia-utils
 nvme-cli
 obs-studio
