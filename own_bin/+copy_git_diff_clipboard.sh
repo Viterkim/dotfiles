@@ -7,7 +7,7 @@ usage() {
   echo "usage: copy_git_diff_clipboard.sh -a | -s | -u | -c <commit> | -b <branch> | -m" >&2
   echo "  -a            all changes (tracked + untracked), without touching your real index" >&2
   echo "  -s            staged changes" >&2
-  echo "  -u            unstaged changes" >&2
+  echo "  -u            unstaged changes, including untracked files" >&2
   echo "  -c <commit>   combined diff from <commit> to HEAD" >&2
   echo "  -b <branch>   diff from merge-base(<branch>, HEAD) to HEAD" >&2
   echo "  -m            diff from merge-base(main/master, HEAD) to HEAD" >&2
@@ -57,8 +57,18 @@ LABEL=""
 
 case "$MODE" in
   unstaged)
-    CONTENT="$(git diff --no-color)"
-    LABEL="unstaged changes"
+    CONTENT="$(
+      cd "$(git rev-parse --show-toplevel)"
+      git diff --no-color
+      while IFS= read -r -d '' file; do
+        status=0
+        git diff --no-color --no-index -- /dev/null "$file" || status=$?
+        if [ "$status" -gt 1 ]; then
+          exit "$status"
+        fi
+      done < <(git ls-files --others --exclude-standard -z)
+    )"
+    LABEL="unstaged and untracked changes"
     ;;
 
   staged)
@@ -102,6 +112,7 @@ case "$MODE" in
     trap cleanup EXIT INT TERM
 
     export GIT_INDEX_FILE="$TMP_INDEX"
+    git read-tree --empty
     git add -A >/dev/null 2>&1
 
     if git rev-parse --verify HEAD >/dev/null 2>&1; then
@@ -126,7 +137,7 @@ TOTAL_LINES=$(printf "%s" "$CONTENT" | wc -l | tr -d ' ')
 TOTAL_CHARS=$(printf "%s" "$CONTENT" | wc -c | tr -d ' ')
 
 CLIP="$("$CLIPCOPY_BIN" --backend)"
-printf "%s" "$CONTENT" | "$CLIPCOPY_BIN"
+printf "%s\n" "$CONTENT" | "$CLIPCOPY_BIN"
 
 echo
 echo "Copied $LABEL to clipboard via $CLIP"
